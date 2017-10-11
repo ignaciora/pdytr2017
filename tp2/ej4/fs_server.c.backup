@@ -1,0 +1,72 @@
+#define _FILE_OFFSET_BITS 64
+
+#include "fs.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
+bool_t read_1_svc(read_args *argp, read_ret *result, struct svc_req *rqstp)
+{
+	bool_t retval = 0;
+	result->bytes_read = 0;
+	result->bytes_requested = argp->bytes;
+
+	FILE *file = fopen(strcat("file_storage/", argp->filename), "r");
+	if (file != NULL && !fseeko(file, argp->offset, SEEK_SET)) {
+		result->bytes_read = (long) fread(&result->buffer, argp->bytes, 1, file);
+		if (result->bytes_read) {
+			retval = 1;
+		}
+		else {
+			perror("No se leyeron bytes del archivo\n");
+		}
+		fclose(file);
+	}
+	else {
+		perror("No se pudo abrir el archivo\n");
+	}
+
+	return retval;
+}
+
+
+bool_t write_1_svc(write_args *argp, long *result, struct svc_req *rqstp)
+{
+	bool_t retval = 0;
+	result = 0;
+
+	/* debug */
+	printf("concat folder + filename: %s\n", strcat("file_storage/", argp->filename));
+
+	FILE *file = fopen(strcat("file_storage/", argp->filename), "a");
+	if (file != NULL) {
+		result = (long) fwrite(&argp->buffer, argp->bytes, 1, file);
+		if (result) {
+			retval = 1;
+		}
+		else {
+			perror("No se escribieron bytes del archivo\n");
+		}
+		fclose(file);
+	}
+	else {
+		perror("No se pudo abrir o crear el archivo\n");
+	}
+
+	return retval;
+}
+
+
+int fs_prog_1_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
+{
+	xdr_free (xdr_result, result);
+
+	/*
+	 * Insert additional freeing code here, if needed
+	 */
+
+	return 1;
+}

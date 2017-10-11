@@ -1,0 +1,138 @@
+#define _FILE_OFFSET_BITS 64
+
+#include "fs.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <strings.h>
+
+
+void fs_prog_1(char *host, char opt, char *filename)
+{
+	CLIENT *clnt;
+	FILE *file;
+
+	clnt = clnt_create(host, FS_PROG, FS_VERSION, "udp");
+	if (clnt == NULL) {
+		clnt_pcreateerror(host);
+		exit (1);
+	}
+
+	switch (opt) {
+		case 'r':
+			file = fopen(filename, "r+b"); //'r+'?
+			if (file != NULL) {
+				fs_read(clnt, filename, file);
+				fclose(file);
+			}
+			break;
+		case 'w':
+			file = fopen(filename, "rb"); //'r'?
+			if (file != NULL) {
+				fs_write(clnt, filename, file);
+				fclose(file);
+			}
+			break;
+		default:
+			break;
+		}
+
+	clnt_destroy(clnt);
+}
+
+
+/* Devuelve 1 si se logro extraer del server el archivo completo y '0' en caso contrario. */
+int fs_read(CLIENT *clnt, char *filename, FILE *file) {
+	enum clnt_stat retval;
+	read_ret result;
+	read_args r_args;
+	long bytes_writed = 0;
+
+	r_args.filename = filename;
+	r_args.offset = 0;
+	r_args.bytes = sizeof(file);
+
+	retval = read_1(&r_args, &result, clnt);
+	if (retval == RPC_SUCCESS) {
+		bytes_writed = (long) fwrite(result.buffer, 1, result.bytes_read, file);
+		if (bytes_writed == 0) {
+			clnt_perror(clnt, "No se logro escribir el archivo completo traido del servidor\n");
+		}
+	}
+	else {
+		clnt_perror (clnt, "Fallo la llamada a la funcion READ\n");
+	}
+
+	return (result.bytes_requested == r_args.bytes == bytes_writed) ? 1 : 0;
+}
+
+
+/* Devuelve '1' si se logro depositar en el server el archivo completo y '0' en caso contrario. */
+int fs_write(CLIENT *clnt, char *filename, FILE *file) {
+	enum clnt_stat retval;
+	long result = 0;
+	write_args *w_args;
+	struct stat file_stat;
+
+	/* args setup */
+	if (fstat64(file->_fileno, &file_stat) != 0) {
+		clnt_perror(clnt, "Fallo la lectura del archivo\n");
+		exit(1);
+		//bzero(w_args.buffer, sizeof(char));
+		//fseeko(file, 0, SEEK_END);
+		//w_args.bytes = ftello(file);
+		//rewind(file);
+	}
+	w_args = malloc(sizeof(*w_args));
+	w_args->filename = filename;
+	w_args->bytes = fread(&w_args->buffer, 1, file_stat.st_size, file);
+
+	/* DEBUG */
+	printf("file st_size: %li\n\n", file_stat.st_size);
+	printf("filename: %s\n", w_args->filename);
+	printf("bytes: %li\n", w_args->bytes);
+	printf("buffer: %s\n", &w_args->buffer);
+	printf("sizeof(buffer): %d\n", sizeof(&w_args->buffer));
+	printf("llamando al server...\n\n");
+	/*
+	write_args *w_args2;
+	w_args2 = malloc(sizeof(*w_args2));
+	//w_args2->buffer = calloc(12, 1);
+	//w_args2->filename = malloc(1);
+	w_args2->buffer = "asdasdasdasd";
+	w_args2->bytes = strlen(w_args2->buffer);
+	w_args2->filename = "pp";
+	printf(">> 2 filename: %s\n", w_args2->filename);
+	printf(">> 2 bytes: %li\n", w_args2->bytes);
+	printf(">> 2 buffer: %s\n", w_args2->buffer);
+	*/
+
+	if (w_args->bytes == 0) {
+		clnt_perror(clnt, "No se logro leer el archivo completo antes de enviarlo al servidor\n");
+		exit(1);
+	}
+
+	/* server call */
+	retval = write_1(&w_args, &result, clnt);
+	if (retval != RPC_SUCCESS) {
+		clnt_perror(clnt, "Fallo la llamada a la funcion WRITE\n");
+		exit(1);
+	}
+
+	return (w_args->bytes == result) ? 1 : 0;
+}
+
+
+int main (int argc, char *argv[])
+{
+	if (argc < 4) {
+		printf("usage: %s server_host -r|-w file\n", argv[0]);
+		exit(1);
+	}
+
+	fs_prog_1(argv[1], argv[2][1], argv[3]);
+	exit(0);
+}
