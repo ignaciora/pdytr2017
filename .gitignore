@@ -1,0 +1,11 @@
+*.pdf
+*.pptx
+**/tp1/*
+**/ejemplosRPC/*
+**/tp_lisa/*
+**/ej4/*
+*.o
+core
+**/.vscode/*
+ignaciora
+*.pub
