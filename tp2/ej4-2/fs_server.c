@@ -14,7 +14,7 @@ read_file_1_svc(filename filename, int offset, int bytes,  struct svc_req *rqstp
 	static buffer result;
 
 	FILE *fd;
-	fd = fopen(filename, "r");
+	fd = fopen(filename, "rb");
 
 	lseek(fd->_fileno, offset, SEEK_SET);
 	result.buffer_val = malloc(bytes * sizeof(char));
@@ -32,15 +32,12 @@ write_file_1_svc(filename filename, buffer buffer, int bytes,  struct svc_req *r
 {
 	static int result;
 
-	int fd = open(filename, O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (fd == -1) {
-		fd = creat(filename, O_WRONLY);
-		fchmod(fd, 0b111101101);
-	}
+	FILE *fd;
+	fd = fopen(filename, "ab");
 
-	result = write(fd, buffer.buffer_val, bytes);
+	result = fwrite(buffer.buffer_val, buffer.buffer_len, 1, fd);
 	printf("Se escribieron %d bytes\n", result);
 
-	close(fd);
+	fclose(fd);
 	return &result;
 }

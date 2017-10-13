@@ -55,7 +55,6 @@ int fs_read(char *source_file, char *dest_file, CLIENT *clnt)
 	fd = fopen(dest_file, "wb");
 
 	do {
-
 		file_part = read_file_1((filename)source_file, reads_count * FILE_CHUNK_SIZE, FILE_CHUNK_SIZE, clnt);
 
 		if (file_part == (buffer *) NULL) {
@@ -83,57 +82,64 @@ int fs_read(char *source_file, char *dest_file, CLIENT *clnt)
 /* Devuelve 0 si se logro depositar en el server el archivo completo y 1 si se lo deposito en forma parcial o si no se guardo nada. */
 int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 {
-	buffer *file;
-	filename filename = source_file;
+	/*
+	Abrir un archivo
+	Saber cuanto tengo que pasar en total
+	Hasta que haya completado el tamaño del archivo:
+		Levantar con lseek el cacho de archivo (CHUNK SIZE)
+		Mandar al servidor el cacho de archivo
+		Actualizo el tamaño de lo que llevo leyendo con lo que escribio el server
+	
+	Cierro el archivo
+	*/
+	printf("Funciono, luego existo");
+	buffer *file_part;
+	//file_part->buffer_val = malloc(FILE_CHUNK_SIZE * sizeof(char));
+
 	int *result;
-	int bytes = 0;
+	int written_bytes = 0;
 	struct stat file_stat;
 
-	int fd = open(filename, O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (fd == -1) {
-		fd = creat(filename, O_WRONLY);
-		fchmod(fd, 0b111101101);
+	//Abrir un archivo
+	FILE *fd;
+	fd = fopen(source_file, "r");
+	
+	//Saber cuanto tengo que pasar en total
+	if (fstat(fd->_fileno, &file_stat) == -1) {
+		return 1;
 	}
 
-	/*
-	new_filesize = read(fd, file->buffer_val, FILE_CHUNK_SIZE);
+	printf("Logre abrir el archivo y cargar los stats");
 
-	if (fstat(fd, &file_stat) == -1) {
-		return 0;
-	}
-
-	file = malloc(sizeof(buffer));
-	file->buffer_len = 0;
-	file->buffer_val = malloc(FILE_CHUNK_SIZE);
-
+	//Hasta que haya completado el tamaño del archivo:
 	do {
-		result = write_file_1(filename, buffer, bytes, clnt);
+
+		//Levantar con lseek el cacho de archivo (CHUNK SIZE)
+		lseek(fd->_fileno, written_bytes, SEEK_SET);
+		printf("hago el seek del archivo");
+		file_part->buffer_len = read(fd->_fileno, file_part->buffer_val, FILE_CHUNK_SIZE);
+
+		printf("Logre leer %i bytes del archivo", &file_part->buffer_len);
+		if (file_part->buffer_len == -1) {
+			printf("read: (ERROR) El archivo %s no existe\n.", source_file);
+			return 1;
+		}
+
+		result = write_file_1((filename)dest_file, *file_part, file_part->buffer_len, clnt);
 		if (result == (int *) NULL) {
 			clnt_perror (clnt, "write: (ERROR) Fallo la llamada al server\n");
-			return 0;
-		}
-		//file_part = read_file_1(filename, reads_count * FILE_CHUNK_SIZE, FILE_CHUNK_SIZE, clnt);
-
-		if (file_part->buffer_len == -1) {
-			printf("read: (ERROR) El archivo %s no existe\n.", filename);
-			return 0;
+			return 1;
 		}
 
-		file->buffer_val = realloc(file->buffer_val, reads_count * FILE_CHUNK_SIZE * sizeof(char) + file_part->buffer_len * sizeof(char) + sizeof(char));
+		printf("El server escribio: %i", &result);
+		written_bytes += &result;
 
-		file->buffer_len += file_part->buffer_len;
-		strcpy(file->buffer_val + reads_count * FILE_CHUNK_SIZE, file_part->buffer_val);
-
-		reads_count++;
 	}
-	while (file_part->buffer_len == FILE_CHUNK_SIZE);
+	while (&file_stat.st_size > written_bytes);
 
-	printf("%d bytes:\n%s\n", file->buffer_len, file->buffer_val);
-
-	close(fd);
-	
-	printf("Se escribieron %d bytes\n", new_filesize);
-	*/
+	//Cierro el archivo
+	fclose(fd);
+	free(file_part->buffer_val);
 
 	return 0;
 }
