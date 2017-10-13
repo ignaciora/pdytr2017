@@ -24,14 +24,14 @@ void fs_prog_1(char *host, char opt, char *source_file, char *dest_file)
 	switch (opt) {
 		/* read */
 		case 'r':
-			if (fs_read(source_file, dest_file, clnt) == 0) {
+			if (fs_read(source_file, dest_file, clnt) != 0) {
 				printf("read: (ERROR) Fallo la lectura total o parcial del archivo que se encuentra en el servidor\n");
 			}
 			break;
 
 		/* write */
 		case 'w':
-			if (fs_write(source_file, dest_file, clnt) == 0) {
+			if (fs_write(source_file, dest_file, clnt) != 0) {
 				printf("write: (ERROR) Fallo la escritura total o parcial del archivo en el servidor\n");
 			}
 			break;
@@ -45,56 +45,42 @@ void fs_prog_1(char *host, char opt, char *source_file, char *dest_file)
 }
 
 
-/* Devuelve 1 si se logro extraer del server el archivo completo y '0' si se lo extrajo en forma parcial o si no se recupero nada. */
+/* Devuelve 0 si se logro extraer del server el archivo completo y 1 si se lo extrajo en forma parcial o si no se recupero nada. */
 int fs_read(char *source_file, char *dest_file, CLIENT *clnt)
 {
-	buffer *file, *file_part;
-	filename filename = source_file;
-	int reads_count, new_filesize = 0;
+	FILE *fd;
+	buffer *file_part;
+	int reads_count = 0;
 
-	file = malloc(sizeof(buffer));
-	file->buffer_len = 0;
-	file->buffer_val = malloc(FILE_CHUNK_SIZE);
+	fd = fopen(dest_file, "wb");
 
 	do {
-		file_part = read_file_1(filename, reads_count * FILE_CHUNK_SIZE, FILE_CHUNK_SIZE, clnt);
+
+		file_part = read_file_1((filename)source_file, reads_count * FILE_CHUNK_SIZE, FILE_CHUNK_SIZE, clnt);
+
 		if (file_part == (buffer *) NULL) {
 			clnt_perror (clnt, "read: (ERROR) Fallo la llamada al server\n");
-			return 0;
+			return 1;
 		}
 
 		if (file_part->buffer_len == -1) {
-			printf("read: (ERROR) El archivo %s no existe\n.", filename);
-			return 0;
+			printf("read: (ERROR) El archivo %s no existe\n.", source_file);
+			return 1;
 		}
 
-		file->buffer_val = realloc(file->buffer_val, reads_count * FILE_CHUNK_SIZE * sizeof(char) + file_part->buffer_len * sizeof(char) + sizeof(char));
-
-		file->buffer_len += file_part->buffer_len;
-		strcpy(file->buffer_val + reads_count * FILE_CHUNK_SIZE, file_part->buffer_val);
+		fwrite(file_part->buffer_val, file_part->buffer_len, 1, fd);
 
 		reads_count++;
 	}
 	while (file_part->buffer_len == FILE_CHUNK_SIZE);
 
-	printf("%d bytes:\n%s\n", file->buffer_len, file->buffer_val);
-
-	int fd = open(dest_file, O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (fd == -1) {
-		fd = creat(dest_file, O_WRONLY);
-		fchmod(fd, 0b111101101);
-	}
-
-	new_filesize = write(fd, file->buffer_val, file->buffer_len);
-	close(fd);
-	
-	printf("Se escribieron %d bytes\n", new_filesize);
+	fclose(fd);
 
 	return 0;
 }
 
 
-/* Devuelve '1' si se logro depositar en el server el archivo completo y '0' si se lo deposito en forma parcial o si no se guardo nada. */
+/* Devuelve 0 si se logro depositar en el server el archivo completo y 1 si se lo deposito en forma parcial o si no se guardo nada. */
 int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 {
 	buffer *file;
