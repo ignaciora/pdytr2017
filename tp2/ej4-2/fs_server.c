@@ -35,7 +35,7 @@ write_file_1_svc(filename filename, buffer buffer, int bytes,  struct svc_req *r
 	FILE *fd;
 	fd = fopen(filename, "ab");
 
-	result = fwrite(buffer.buffer_val, buffer.buffer_len, 1, fd);
+	result = fwrite(buffer.buffer_val, 1, buffer.buffer_len, fd);
 	printf("Se escribieron %d bytes\n", result);
 
 	fclose(fd);

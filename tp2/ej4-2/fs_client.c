@@ -94,7 +94,8 @@ int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 	*/
 	printf("Funciono, luego existo");
 	buffer *file_part;
-	//file_part->buffer_val = malloc(FILE_CHUNK_SIZE * sizeof(char));
+	file_part = malloc(sizeof(buffer));
+	file_part->buffer_val = malloc(FILE_CHUNK_SIZE * sizeof(buffer));
 
 	int *result;
 	int written_bytes = 0;
@@ -102,7 +103,7 @@ int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 
 	//Abrir un archivo
 	FILE *fd;
-	fd = fopen(source_file, "r");
+	fd = fopen(source_file, "rb");
 	
 	//Saber cuanto tengo que pasar en total
 	if (fstat(fd->_fileno, &file_stat) == -1) {
@@ -132,14 +133,13 @@ int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 		}
 
 		printf("El server escribio: %i", &result);
-		written_bytes += &result;
+		written_bytes += *result;
 
 	}
-	while (&file_stat.st_size > written_bytes);
+	while (file_stat.st_size > written_bytes);
 
 	//Cierro el archivo
 	fclose(fd);
-	free(file_part->buffer_val);
 
 	return 0;
 }
