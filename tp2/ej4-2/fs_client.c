@@ -124,7 +124,8 @@ int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 }
 
 
-/* TEST FUNCTION */
+/* Se trae el archivo source_file a dest_file, 
+y luego crea una copia de source_file en la misma carpeta */
 void copy_gen(char *host, char *source_file, char *dest_file)
 {
 	CLIENT *clnt;
@@ -139,7 +140,12 @@ void copy_gen(char *host, char *source_file, char *dest_file)
 		printf("read: (ERROR) Fallo la lectura total o parcial del archivo que se encuentra en el servidor\n");
 	}
 
-	if (fs_write(dest_file, strcat(dest_file, "__copy"), clnt) != 0) {
+	char * copy_file = malloc(strlen(source_file)+strlen("__copy")+1);
+	copy_file[0] = '\0';		//se asegura que la funcion tome la memoria como vacia
+	strcat(copy_file, source_file);
+	strcat(copy_file, "__copy");
+
+	if (fs_write(source_file, copy_file, clnt) != 0) {
 		printf("write: (ERROR) Fallo la escritura total o parcial de la copia en el servidor\n");
 	}
 
@@ -152,7 +158,7 @@ void copy_gen(char *host, char *source_file, char *dest_file)
 int main (int argc, char *argv[])
 {
 	if (argc < 5) {
-		printf("usage: %s server_host ([--copy]  |  -r|-w) source_file dest_file\n", argv[0]);
+		printf("usage: %s server_host (--copy|-r|-w) source_file dest_file\n", argv[0]);
 		exit(1);
 	}
 
