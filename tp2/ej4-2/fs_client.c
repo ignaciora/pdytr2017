@@ -12,40 +12,6 @@
 #endif
 
 
-void fs_prog_1(char *host, char opt, char *source_file, char *dest_file)
-{
-	CLIENT *clnt;
-
-	clnt = clnt_create(host, FS_PROG, FS_VERSION, "udp");
-	if (clnt == NULL) {
-		clnt_pcreateerror(host);
-		exit(1);
-	}
-
-	switch (opt) {
-		/* read */
-		case 'r':
-			if (fs_read(source_file, dest_file, clnt) != 0) {
-				printf("read: No se pudo completar la operacion\n");
-			}
-			break;
-
-		/* write */
-		case 'w':
-			if (fs_write(source_file, dest_file, clnt) != 0) {
-				printf("write: No se pudo completar la operacion\n");
-			}
-			break;
-
-		default:
-			printf("(ERROR) No se reconocio la accion -%c\n", opt);
-			break;
-	}
-
-	clnt_destroy(clnt);
-}
-
-
 /* Devuelve 0 si se logro extraer del server el archivo completo y 1 si se lo extrajo en forma parcial o si no se recupero nada. */
 int fs_read(char *source_file, char *dest_file, CLIENT *clnt)
 {
@@ -129,11 +95,46 @@ int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 	while (file_stat.st_size > written_bytes);
 
 	fclose(file);
+	free(file_part);
 	return 0;
 }
 
 
-/* Se trae el archivo source_file (server) a dest_file (client) y luego crea una copia de source_file en el servidor */
+void fs_prog_1(char *host, char opt, char *source_file, char *dest_file)
+{
+	CLIENT *clnt;
+
+	clnt = clnt_create(host, FS_PROG, FS_VERSION, "udp");
+	if (clnt == NULL) {
+		clnt_pcreateerror(host);
+		exit(1);
+	}
+
+	switch (opt) {
+		/* read */
+		case 'r':
+			if (fs_read(source_file, dest_file, clnt) != 0) {
+				printf("read: No se pudo completar la operacion\n");
+			}
+			break;
+
+		/* write */
+		case 'w':
+			if (fs_write(source_file, dest_file, clnt) != 0) {
+				printf("write: No se pudo completar la operacion\n");
+			}
+			break;
+
+		default:
+			printf("(ERROR) No se reconocio la accion -%c\n", opt);
+			break;
+	}
+
+	clnt_destroy(clnt);
+}
+
+
+/* Se trae el archivo source_file (server) a dest_file (client) y luego crea una copia de source_file en el servidor. */
 void copy_gen(char *host, char *source_file, char *dest_file)
 {
 	CLIENT *clnt;
@@ -149,14 +150,15 @@ void copy_gen(char *host, char *source_file, char *dest_file)
 	}
 
 	char *copy_file = malloc(strlen(source_file) + strlen("__copy") + 1);
-	copy_file[0] = '\0';	//se asegura que la funcion tome la memoria como vacia
+	copy_file[0] = '\0'; //se asegura que la funcion tome la memoria como vacia
 	strcat(copy_file, source_file);
 	strcat(copy_file, "__copy");
 
-	if (fs_write(source_file, copy_file, clnt) != 0) {
+	if (fs_write(dest_file, copy_file, clnt) != 0) {
 		printf("write: No se pudo completar la operacion\n");
 	}
 
+	free(copy_file);
 	clnt_destroy(clnt);
 }
 
