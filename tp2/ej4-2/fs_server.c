@@ -15,6 +15,7 @@ read_file_1_svc(filename filename, int offset, int bytes,  struct svc_req *rqstp
 
 	file = fopen(filename, "rb");
 	if (file == NULL) {
+		printf("read: (ERROR) Se pidio el archivo %s pero no se lo pudo abrir\n", filename);
 		return NULL;
 	}
 
@@ -37,6 +38,7 @@ write_file_1_svc(filename filename, buffer buffer, int bytes,  struct svc_req *r
 
 	file = fopen(filename, "ab");
 	if (file == NULL) {
+		printf("write: (ERROR) No se pudo abrir o crear el archivo %s\n", filename);
 		return 0;
 	}
 
