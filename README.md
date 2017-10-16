@@ -4,7 +4,8 @@ service rpcbind status
 
 Compilar los archivos usando: make -f Makefile.fs
 
-Help:
+
+fs_client (cliente):
 
 usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]
 
@@ -15,3 +16,5 @@ server_host		localhost o una IP
      --copy		trae un archivo del server y lo vuelve a enviar generando una copia
 source_file		ruta del archivo local o nombre del archivo del server (origen)
   dest_file		ruta del archivo local o nombre del archivo del server (destino)
+
+El servidor se ejecuta sin argumentos
