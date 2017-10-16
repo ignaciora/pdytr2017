@@ -123,14 +123,22 @@ int fs_write(char *source_file, char *dest_file, CLIENT *clnt)
 }
 
 
-void fs_prog_1(char *host, char opt, char *source_file, char *dest_file)
+void fs_prog_1(char *host, char opt, char *source_file, char *dest_file, int timeout_always)
 {
 	CLIENT *clnt;
+	struct timeval tv;
+
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
 
 	clnt = clnt_create(host, FS_PROG, FS_VERSION, "udp");
 	if (clnt == NULL) {
 		clnt_pcreateerror(host);
 		exit(1);
+	}
+
+	if (timeout_always) {
+		clnt_control(clnt, CLSET_TIMEOUT, (char *) &tv);
 	}
 
 	switch (opt) {
@@ -186,19 +194,43 @@ void copy_gen(char *host, char *source_file, char *dest_file)
 }
 
 
+void show_help(char *program_name)
+{
+	printf("usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]\n", program_name);
+	printf("--help			muestra esta ayuda\n");
+	printf("server_host		localhost o una IP\n");
+	printf("-r			read, traer un archivo del server (ej 5-a timeout)\n");
+	printf("-w			write, enviar un archivo al server (ej 5-a promedio)\n");
+	printf("--copy			función para la prueba solicitada en el ej 4-b\n");
+	printf("source_file		ruta del archivo local o nombre del archivo del server (origen)\n");
+	printf("dest_file		ruta del archivo local o nombre del archivo del server (destino)\n");
+	printf("--test-timeout		siempre tirar timeout, pedido en el ej 5-c\n\n");
+}
+
+
 int main (int argc, char *argv[])
 {
+	if (argc == 2 && strcmp(argv[1], "--help") == 0) {
+		show_help(argv[0]);
+		exit(0);
+	}
+
 	if (argc < 5) {
-		printf("usage: %s server_host (-r|-w|--copy) source_file dest_file\n", argv[0]);
+		printf("usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]\n", argv[0]);
 		exit(1);
+	}
+
+	if (argc == 6 && strcmp(argv[5], "--test-timeout") == 0) {
+		fs_prog_1(argv[1], argv[2][1], argv[3], argv[4], 1);
+		exit(0);
 	}
 
 	if (strcmp(argv[2], "--copy") == 0) {
 		copy_gen(argv[1], argv[3], argv[4]);
+		exit(0);
 	}
-	else {
-		fs_prog_1(argv[1], argv[2][1], argv[3], argv[4]);
-	}
+
+	fs_prog_1(argv[1], argv[2][1], argv[3], argv[4], 0);
 
 	exit(0);
 }
