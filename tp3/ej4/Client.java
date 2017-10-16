@@ -3,6 +3,8 @@ import java.rmi.registry.Registry; /* REGISTRY_PORT */
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Arrays;
 
 public class Client 
@@ -32,32 +34,52 @@ public class Client
 
   private static void copy(String origin_file, String dest_file, IServer remote) {
     readFromServer(origin_file, dest_file, remote);
-    //writeToServer(dest_file, origin_file + "__copy", remote);
-    writeToServer(origin_file, origin_file + "__copy", remote);
+    writeToServer(dest_file, origin_file + "__copy", remote);
   }
 
   private static void writeToServer(String origin_file, String dest_file, IServer remote) {
     try {
       Path path = Paths.get(origin_file);
-      byte[] buffer = Files.readAllBytes(path);
-      
-      int i = 0;
-      do {
-        int length = (buffer.length <= i + BUFFER_SIZE) ? buffer.length - i : i + BUFFER_SIZE;
-        
-        byte[] subbuffer = Arrays.copyOfRange(buffer, i, i+length);
-        int res = remote.write(dest_file, subbuffer.length, subbuffer);
-        i += res;
-        //System.out.format("Listo, escritos %d bytes\n", res);
-        System.out.format("%d\n", i);
-      } while (i < buffer.length);
+      FileInputStream fis = new FileInputStream(path.toFile());
+      byte[] buffer = new byte[BUFFER_SIZE];
+
+      int read = 0;
+
+      while ((read = fis.read(buffer)) > 0) {
+        int written = remote.write(dest_file, read, buffer);
+        if (written == 0) {
+          throw new Exception("No se pudieron escribir datos en el server");
+        }
+      }
+
+      fis.close();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println(e);
     }
   }
 
   private static void readFromServer(String origin_file, String dest_file, IServer remote) {
+    try {
+      FileOutputStream fos = new FileOutputStream(dest_file, true);
+      DataBuffer db = new DataBuffer(BUFFER_SIZE);
 
+      boolean read = true;
+      int total_read = 0;
+
+      while (read) {
+        db = remote.read(origin_file, total_read, BUFFER_SIZE);
+        total_read += db.buffer_len;
+        if (db.buffer_len > 0) {
+          fos.write(db.buffer, 0, db.buffer_len);
+        } else {
+          read = false;
+        }
+      }
+
+      fos.close();
+    } catch (Exception e) {
+      System.out.println(e);
+    }
   }
 
 }

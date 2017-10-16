@@ -2,6 +2,7 @@
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
 
 /* This class implements the interface with remote methods */
 public class ServerImpl extends UnicastRemoteObject implements IServer 
@@ -12,7 +13,21 @@ public class ServerImpl extends UnicastRemoteObject implements IServer
   }
 
   public DataBuffer read(String filename, int offset, int bytes_to_read) throws RemoteException {
-    return new DataBuffer();
+
+    DataBuffer db = new DataBuffer(bytes_to_read);
+
+    try {
+      RandomAccessFile raf = new RandomAccessFile(filename, "r");
+  
+      raf.seek(offset);
+      db.buffer_len = raf.read(db.buffer);
+  
+      raf.close();
+    } catch(Exception e) {
+      System.out.println(e);
+    }
+
+    return db;
   }
 
   public int write(String filename, int bytes_to_write, byte[] buffer) throws RemoteException {
@@ -27,7 +42,7 @@ public class ServerImpl extends UnicastRemoteObject implements IServer
       e.printStackTrace();
       return 0;
     }
-    System.out.println(bytes_to_write);
+    
     return bytes_to_write;
   }
 }
