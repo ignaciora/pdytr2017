@@ -1,14 +1,17 @@
 #!/bin/bash
-#corre 10 ejecuciones y calcula el promedio de los tiempos de comunicacion
+#Corre 10 ejecuciones y calcula el promedio de los tiempos de comunicacion
 
-sum=0;
-for i in `seq 1 2`; do
-  val=$(./fs_client localhost -w ./files/img $i | grep EJ5-A | cut -d '@' -f 2);
+echo "Ejecutando 10 veces: ./fs_client localhost -w ./files/test (dest_file=1..10)...";
+echo "Los tiempos de comunicacion son los siguientes:";
+sum="(0";
+for i in `seq 1 10`; do
+  val=$(./fs_client localhost -w ./files/test $i | grep EJ5-A | cut -d '@' -f 2);
   if [ ${#val} -ne 0 ]; then
-    echo $val;
+    echo "$i - $val";
+    sum="$sum+$val";
   fi
-  #sum=$(($sum + $val));
   val=0;
 done;
-#echo "sumatoria: $sum";
-#echo "promedio: $(($sum / 2))";
+prom="$sum)/10";
+echo "";
+echo "Promedio: $(python -c "print '%.6f' % ($prom)")";
