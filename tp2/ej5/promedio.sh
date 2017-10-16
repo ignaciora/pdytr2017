@@ -14,4 +14,7 @@ for i in `seq 1 10`; do
 done;
 prom="$sum)/10";
 echo "";
+echo "Formato de la cuenta por si no esta instalado python:";
+echo $prom;
+echo "";
 echo "Promedio: $(python -c "print '%.6f' % ($prom)")";
