@@ -196,7 +196,7 @@ void copy_gen(char *host, char *source_file, char *dest_file)
 
 void show_help(char *program_name)
 {
-	printf("usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]\n", program_name);
+	printf("usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]\n\n", program_name);
 	printf("--help			muestra esta ayuda\n");
 	printf("server_host		localhost o una IP\n");
 	printf("-r			read, traer un archivo del server (ej 5-a timeout)\n");
