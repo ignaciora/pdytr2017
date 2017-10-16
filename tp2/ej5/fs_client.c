@@ -165,43 +165,13 @@ void fs_prog_1(char *host, char opt, char *source_file, char *dest_file, int tim
 }
 
 
-/* Se trae el archivo source_file (server) a dest_file (client) y luego crea una copia de source_file en el servidor. */
-void copy_gen(char *host, char *source_file, char *dest_file)
-{
-	CLIENT *clnt;
-	
-	clnt = clnt_create(host, FS_PROG, FS_VERSION, "udp");
-	if (clnt == NULL) {
-		clnt_pcreateerror(host);
-		exit(1);
-	}
-
-	if (fs_read(source_file, dest_file, clnt) != 0) {
-		printf("read: No se pudo completar la operacion\n");
-	}
-
-	char *copy_file = malloc(strlen(source_file) + strlen("__copy") + 1);
-	copy_file[0] = '\0'; //se asegura que la funcion tome la memoria como vacia
-	strcat(copy_file, source_file);
-	strcat(copy_file, "__copy");
-
-	if (fs_write(dest_file, copy_file, clnt) != 0) {
-		printf("write: No se pudo completar la operacion\n");
-	}
-
-	free(copy_file);
-	clnt_destroy(clnt);
-}
-
-
 void show_help(char *program_name)
 {
-	printf("usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]\n\n", program_name);
+	printf("usage: %s [--help] server_host (-r|-w) source_file dest_file [--test-timeout]\n\n", program_name);
 	printf("--help			muestra esta ayuda\n");
 	printf("server_host		localhost o una IP\n");
 	printf("-r			read, traer un archivo del server (ej 5-a timeout)\n");
 	printf("-w			write, enviar un archivo al server (ej 5-a promedio)\n");
-	printf("--copy			función para la prueba solicitada en el ej 4-b\n");
 	printf("source_file		ruta del archivo local o nombre del archivo del server (origen)\n");
 	printf("dest_file		ruta del archivo local o nombre del archivo del server (destino)\n");
 	printf("--test-timeout		siempre tirar timeout, pedido en el ej 5-c\n\n");
@@ -216,17 +186,12 @@ int main (int argc, char *argv[])
 	}
 
 	if (argc < 5) {
-		printf("usage: %s [--help] server_host (-r|-w|--copy) source_file dest_file [--test-timeout]\n", argv[0]);
+		printf("usage: %s [--help] server_host (-r|-w) source_file dest_file [--test-timeout]\n", argv[0]);
 		exit(1);
 	}
 
 	if (argc == 6 && strcmp(argv[5], "--test-timeout") == 0) {
 		fs_prog_1(argv[1], argv[2][1], argv[3], argv[4], 1);
-		exit(0);
-	}
-
-	if (strcmp(argv[2], "--copy") == 0) {
-		copy_gen(argv[1], argv[3], argv[4]);
 		exit(0);
 	}
 
