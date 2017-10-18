@@ -32,7 +32,7 @@ public class ServerImpl extends UnicastRemoteObject implements IServer
 
   public int write(String filename, int bytes_to_write, byte[] buffer) throws RemoteException {
 
-    //Ver acá por que no se puede saber cuanto se escribio realmente
+    //Ver aca por que no se puede saber cuanto se escribio realmente
     //https://stackoverflow.com/questions/33842174/get-number-of-bytes-a-dataoutputstream-wrapped-around-socket-getoutputstream-wro
     try {
       FileOutputStream output = new FileOutputStream(filename, true);
