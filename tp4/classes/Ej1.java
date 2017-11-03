@@ -1,8 +1,10 @@
 import jade.core.*;
+import java.lang.management.*;
 
 public class Ej1 extends Agent {
   // Ejecutado por única vez en la creación
   String[] containers = new String[4];
+  double[] loads = new double[4];
   int idx = 0;
   long startTime = System.currentTimeMillis();
 
@@ -26,6 +28,10 @@ public class Ej1 extends Agent {
   protected void afterMove() {
     println("Entrando a "+this.here().getName());
     if (this.here().getName() != containers[3]) {
+
+      println("Java runtime load: " + Double.toString(ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()));
+      println("Total memory avail: " + Double.toString(java.lang.Runtime.getRuntime().totalMemory()));
+      idx++;
       moveNext();
     } 
     Long elapsed = System.currentTimeMillis() - startTime;
@@ -35,7 +41,6 @@ public class Ej1 extends Agent {
   void moveNext() {
     try {
       ContainerID destino = new ContainerID(containers[idx], null);
-      idx++;
       System.out.println("Migrando el agente a " + destino.getID());
       this.doMove(destino);
     } catch (Exception e) {
