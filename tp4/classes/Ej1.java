@@ -4,6 +4,7 @@ import java.lang.management.*;
 public class Ej1 extends Agent {
   // Ejecutado por única vez en la creación
   String[] containers = new String[4];
+  String[] listaStrings = new String[4];
   double[] loads = new double[4];
   int idx = 0;
   long startTime = System.currentTimeMillis();
@@ -26,14 +27,20 @@ public class Ej1 extends Agent {
 
   // Ejecutado al llegar a un contenedor como resultado de una migración
   protected void afterMove() {
-    println("Entrando a "+this.here().getName());
-    if (this.here().getName() != containers[3]) {
-
-      println("Java runtime load: " + Double.toString(ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()));
-      println("Total memory avail: " + Double.toString(java.lang.Runtime.getRuntime().totalMemory()));
+    //Concatenar los datos en un string y meterlo en un array segun el idx
+    String carga = Double.toString(ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
+    String memoria = Double.toString(java.lang.Runtime.getRuntime().totalMemory());
+    String cnt = this.here().getName();
+    listaStrings[idx] = cnt+"\t"+carga+"\t"+memoria;
+    if (!this.here().getName().equals(containers[3])) {
       idx++;
       moveNext();
-    } 
+      return;
+    }
+    println("Container\tCarga\tMemoria disponible\t");
+    for(String s : listaStrings) {
+      println(s);
+    }
     Long elapsed = System.currentTimeMillis() - startTime;
     println("Tarde " + elapsed.toString());
   }
@@ -41,7 +48,6 @@ public class Ej1 extends Agent {
   void moveNext() {
     try {
       ContainerID destino = new ContainerID(containers[idx], null);
-      System.out.println("Migrando el agente a " + destino.getID());
       this.doMove(destino);
     } catch (Exception e) {
       
